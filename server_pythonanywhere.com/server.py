@@ -139,7 +139,33 @@ def get_fields(last=False):
         return last_message[:-1] + "}\"\n"
     else:
         return jsonify(values), 200
+    
+@app.route('/api/clear', methods=['GET'])
+def clear_field():
+    if len(request.args) == 0:
+        return jsonify('Provide token and fields')
 
+    if request.args.get("token") is None:
+        return jsonify('Please add the token')
+
+    if len(request.args) == 1 and request.args.get("token") is not None:
+        return jsonify('Please provide fields')
+
+    email = None
+    # get email from token
+    try:
+        email, = db.session.execute("SELECT email from Users where api_token='{token}'".format(token=request.args.get("token")))
+    except ValueError:
+        return jsonify('Invalid token')
+    
+    for arg in request.args:
+        if arg != "token":
+            try:
+                db.session.execute("DELETE FROM Field where owner='{email}' and name='{name}'".format(email=email[0], name=arg))
+            except:
+                continue
+    return '1\n'
+                
 @app.route('/api/get/last', methods=['GET'])
 def get_last_field():
     return get_fields(last=True)
